@@ -77,11 +77,14 @@ namespace project_vniia
             catch(Exception k)
             { MessageBox.Show(k.ToString()); }
 
-            //for (int t = 6; this.Controls[t] != this.Controls[8]; t++)
-            //{
-            //    Control c = this.Controls[t];
-            //    pb.WireControl(c);
-            //}
+            for (int t = 0; t < Controls.Count; t++)
+            {
+                if (Controls[t].Name == "dataGridView2" || Controls[t].Name == "dataGridView1" || Controls[t].Name == "checkBox1")
+                {
+                    Control c = this.Controls[t];
+                    pb.WireControl(c);
+                }
+            }
 
             dataGridView1.DataError += new DataGridViewDataErrorEventHandler(DataGridView1_DataError);
             dataGridView2.DataError += new DataGridViewDataErrorEventHandler(DataGridView2_DataError);
@@ -198,24 +201,28 @@ namespace project_vniia
             Class_ways.Zap_(_ways_, F2, k_tr);
             //
             //ready and work
-            Calibr calibr = new Calibr();
-            calibr.Main_calibr(this);
-
-            Zamech_BD zamech_BD = new Zamech_BD();
-            zamech_BD.Main_Zamech_BD(this);
-
+            try
+            {
+                Calibr calibr = new Calibr();
+                calibr.Main_calibr(this);
+            }
+            catch(Exception p)
+            { MessageBox.Show("Ошибка! Файл НЕ для добавления данных в таблицу Термокалибровка, переместите в другую папку!"); }
+            try
+            {
+                Zamech_BD zamech_BD = new Zamech_BD();
+                zamech_BD.Main_Zamech_BD(this);
+            }
+            catch (Exception p)
+            { MessageBox.Show("Ошибка! Файл НЕ для добавления данных в таблицу Замечания по БД, переместите в другую папку!");
+            }
+            
             Proverka proverka = new Proverka();
             //
             MyDB myDB = new MyDB();
 
             Class_zagruz.Combobox_(conString, comboBox1, ds, myDB, myDBs);
-
-            dataGridView1.DataSource = myDBs["[Блоки]"].table.DefaultView;
-            dataGridView1.Columns["Номер БД"].ReadOnly = true;
-
-            Datagrid_columns_delete_blocks();
-            Datagrid_columns_delete();
-
+            
             proverka.Main_Proverka(this, myDBs["[Проверка]"].table);
             try
             {
@@ -234,8 +241,24 @@ namespace project_vniia
             }
             catch (Exception h)
             { Console.WriteLine(h.Message); }
+            try
+            {
+                foreach (var my in comboBox1.Items)
+                {
+                    myDBs["[" + my + "]"].table.Clear();
+                }
+                myDBs["[Блоки]"].table.Clear();
+            }
+            catch(Exception p)
+            { MessageBox.Show(p.ToString()); }
 
             Class_zagruz.Combobox_(conString, comboBox1, ds, myDB, myDBs);
+
+            dataGridView1.DataSource = myDBs["[Блоки]"].table.DefaultView;
+            dataGridView1.Columns["Номер БД"].ReadOnly = true;
+
+            Datagrid_columns_delete_blocks();
+            Datagrid_columns_delete();
 
             Form4_splash.CloseForm();
         }
@@ -249,13 +272,15 @@ namespace project_vniia
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             dataGridView2.DataSource = myDBs["[" + comboBox1.Text + "]"].table.DefaultView;
-            
-            for (i = 0; i < 5; i++)
+            if (comboBox1.Text != "Проверка")
             {
-                if (dataGridView2.Columns.Contains(stolbez[i]))
+                for (i = 0; i < 5; i++)
                 {
-                    dataGridView2.Columns[stolbez[i]].ReadOnly = true;
-                    break;
+                    if (dataGridView2.Columns.Contains(stolbez[i]))
+                    {
+                        dataGridView2.Columns[stolbez[i]].ReadOnly = true;
+                        break;
+                    }
                 }
             }
             Datagrid_columns_delete();
@@ -659,6 +684,7 @@ namespace project_vniia
         private void button1_Click(object sender, EventArgs e)
         {
             MessageBox.Show("При сложной фильтрации приоритет у значения из первой ячейки.\n\t");
+            
         }
 
         public Form4_func_new CreateForm_Form4()
@@ -682,6 +708,33 @@ namespace project_vniia
         private void переместитьМеждуПодразделениямиToolStripMenuItem_Click(object sender, EventArgs e)
         {
             CreateForm_Form4();
+        }
+        bool k = false;
+        
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBox1.Checked == true)
+            {
+                for (int i = 0; i < Controls.Count; i++)
+                {
+                    if (Controls[i].Name == "dataGridView2"|| Controls[i].Name == "dataGridView1")
+                    {
+                        Control c = Controls[i];
+                        pb.WireControl1(c);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < Controls.Count; i++)
+                {
+                    if (Controls[i].Name == "dataGridView2" || Controls[i].Name == "dataGridView1")
+                    {
+                        Control c = Controls[i];
+                        pb.WireControl(c);
+                    }
+                }
+            }
         }
     }
     

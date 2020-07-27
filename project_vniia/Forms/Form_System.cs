@@ -14,6 +14,7 @@ namespace project_vniia
         DataSet ds = new DataSet();
         public Dictionary<string, Form1.MyDB> myDBs;
         DataGridView dataGrid = new DataGridView();
+        DataTable dt = new DataTable();
 
         List<Object> rows_Type_obj = new List<Object>();
         private PickBox pb = new PickBox();
@@ -25,24 +26,26 @@ namespace project_vniia
         public Form_System()
         {
             InitializeComponent();
-            dataGrid.Location = new Point(20, 150);
+            dataGrid.Location = new Point(20, 180);
             dataGrid.Size = new Size(300, 200);
             dataGrid.Anchor = (AnchorStyles)(AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left);
             dataGrid.Visible = false;
             dataGrid.Name = "datagr";
             this.Controls.Add(dataGrid);
             dataGrid.DataError += DataGrid_DataError;
+            
+            dataGridViewLeft.DataError += DataGridViewLeft_DataError; ;
+            dataGridViewRight.DataError += DataGridViewRight_DataError; ;
 
-            //for (int i=0; i< Controls.Count; i++)
-            //{
-            //    if(Controls[i].Name == "datagr")
-            //    {
-            //        Control c = Controls[i];
-            //        pb.WireControl(c);
-            //        break;
-            //    } 
-            //}
-
+            for (int i = 0; i < Controls.Count; i++)
+            {
+                if (Controls[i].Name == "checkBox1" || Controls[i].Name == "dataGridViewLeft" || Controls[i].Name == "dataGridViewRight" || Controls[i].Name == "datagr")
+                {
+                    Control c = Controls[i];
+                    pb.WireControl(c);
+                }
+            }
+            
             //System_ways= Ways_to_txt(System_ways);
 
             string way = "\\build_systems.txt";
@@ -68,6 +71,17 @@ namespace project_vniia
             // del old->!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         }
 
+        private void DataGridViewRight_DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            e.ThrowException = false;
+        }
+
+        private void DataGridViewLeft_DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            e.ThrowException = false;
+        }
+
+       
         private void DataGrid_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
             e.ThrowException = false;
@@ -76,6 +90,11 @@ namespace project_vniia
         private void Form_System_Load(object sender, EventArgs e)
         {
             Otrchet_BD(myDBs);
+           
+            dt.Clear();
+            dt.Columns.Add("Номер системы");
+            dt.Columns.Add("Тип системы");
+            dt.Columns.Add("Тип БД");
         }
         public void Otrchet_BD(Dictionary<string, Form1.MyDB> myDBs)
         {
@@ -129,7 +148,7 @@ namespace project_vniia
                 int value;
                 int.TryParse(string.Join("", tr.Where(c => char.IsDigit(c))), out value);
 
-                if ((value != 56 && value != 561) || (!ttt.Contains("Г") && !ttt.Contains("г")) || ttt.Contains("в") || ttt.Contains("В") || tr.Contains("сдан") || tr.Contains("Сдан"))
+                if ((value != 56 && value != 561) || (!ttt.Contains("Г") && !ttt.Contains("г")) || ttt.Contains("в") || ttt.Contains("В") || ttt.Contains("_сохранено в файле") || tr.Contains("сдан") || tr.Contains("Сдан"))
                 {
                     f = true;
                 }
@@ -153,16 +172,17 @@ namespace project_vniia
             foreach (var obj in rows_Type_obj)
             {
                 comboBox1.Items.Add(obj);
+                comboBox2.Items.Add(obj);
             }
 
             comboBox1.SelectedItem = comboBox1.Items[0];
-            for (int i = 1; i < 9; i++)
-            {
-                comboBox2.Items.Add(i);
-                comboBox3.Items.Add(i);
-            }
+            //for (int i = 1; i < 9; i++)
+            //{
+            //    comboBox2.Items.Add(i);
+            //    comboBox3.Items.Add(i);
+            //}
             comboBox2.SelectedItem = comboBox2.Items[0];
-            comboBox3.SelectedItem = comboBox3.Items[0];
+            //comboBox3.SelectedItem = comboBox3.Items[0];
         }
         public void Razsortirovka(DataTable table, DataSet ds, int t, List<Object> rows_Type_obj)
         {
@@ -173,7 +193,7 @@ namespace project_vniia
                 int k = 0;
                 foreach (var p in rows_Type_obj)
                 {
-                    if (rt.Contains(p.ToString()))
+                    if (p.ToString().Contains(rt))
                     {
                         ds.Tables[k].LoadDataRow(r.ItemArray, true);
                         break;
@@ -186,43 +206,115 @@ namespace project_vniia
         public void Sobr_system()
         {
             string comb = comboBox1.Text;
-            int one = Convert.ToInt32(comboBox2.Text);
-            int two = Convert.ToInt32(comboBox3.Text);
+            string comb1 = comboBox2.Text;
+            List<string> myStr = new List<string>();
+            List<string> myStr_1 = new List<string>();
 
-            DataView dv = ds.Tables[comb].DefaultView;
-            dv.Sort = "Номер БД asc";
-            DataTable sortedDT = dv.ToTable();
-
-            DataTable dt = new DataTable();
-            dt.Clear();
-            dt.Columns.Add("Номер системы");
-            dt.Columns.Add("Тип системы");
-            dt.Columns["Тип системы"].DefaultValue = comb;
-
-            for (int i = 1; i < one + 1; i++)
+            for (int i = dataGridViewLeft.RowCount - 1; i >= 0; i--)
             {
-                dt.Columns.Add("Блок_" + i);
-            }
-            
-            int k = 0;
-            try
-            {
-                for (int i = 1; i < two + 1; i++)
+                DataGridViewRow row = dataGridViewLeft.Rows[i];
+                if (Convert.ToBoolean(row.Cells["Выбрать"].Value))
                 {
-                    DataRow _ravi = dt.NewRow();
-                    for (int j = 1; j < one + 1; j++)
+                    myStr.Add(row.Cells["Номер БД"].Value.ToString());
+                    row.Cells["Выбрать"].Value = false;
+
+                    bool arrl = false;
+                    foreach (DataRow r in dt.Rows)
                     {
-                        _ravi["Блок_" + j] = sortedDT.Rows[k][0];
-                        k++;
+                        var arr = r.ItemArray;
+                        arrl = arr.Contains(row.Cells["Номер БД"].Value.ToString());
+                            if (arrl)
+                            {
+                                MessageBox.Show("Выбранный блок входит в другую систему! "+ row.Cells["Номер БД"].Value.ToString());
+                            return;
+                            }
+                        
                     }
-                    dt.Rows.Add(_ravi);
                 }
             }
-            catch(Exception p)
+            
+            for (int i = dataGridViewRight.RowCount - 1; i >= 0; i--)
+            {
+                DataGridViewRow row = dataGridViewRight.Rows[i];
+                if (Convert.ToBoolean(row.Cells["Выбрать"].Value))
+                {
+                    myStr_1.Add(row.Cells["Номер БД"].Value.ToString());
+                    row.Cells["Выбрать"].Value = false;
+
+                    bool arrl = false;
+                    foreach (DataRow r in dt.Rows)
+                    {
+                        var arr = r.ItemArray;
+                        arrl = arr.Contains(row.Cells["Номер БД"].Value.ToString());
+                        if (arrl)
+                        {
+                            MessageBox.Show("Выбранный блок входит в другую систему! " + row.Cells["Номер БД"].Value.ToString());
+                            return;
+                        }
+
+                    }
+                }
+            }
+            ///////////////
+
+
+            //dt.Columns["Тип БД"].DefaultValue = comb + ","+comb1;
+            if (myStr.Count + myStr_1.Count + 3 > dt.Columns.Count)
+            {
+                for (int i = dt.Columns.Count-2; i < myStr.Count + myStr_1.Count + 1; i++)
+                {
+                    dt.Columns.Add("Блок_" + i);
+                }
+            }
+            int k = 0, jjj=0;
+            try
+            {
+               DataRow _ravi = dt.NewRow();
+                string[] l = new string[myStr.Count];
+                l = myStr.ToArray();
+                
+                string[] l_1 = new string[myStr_1.Count];
+                l_1 = myStr_1.ToArray();
+
+                char nim1 = (l.Length == 0)&& (l_1.Length == 0) ? 'a' :
+                                       (l.Length == 0) ? 'b' :
+                                       (l_1.Length == 0) ? 'c' :
+                                      'd';
+                switch (nim1)
+                {
+                    case 'a':
+                        MessageBox.Show("Выберите блоки!");
+                        break;
+                    case 'b':
+                        _ravi["Тип БД"] = comb1;
+                        break;
+                    case 'c':
+                        _ravi["Тип БД"] = comb;
+                        break;
+                    case 'd':
+                        _ravi["Тип БД"] = comb + "/" + comb1;
+                        break;
+                }
+
+               for (int j = 1; j < myStr.Count + 1; j++)
+               {
+                  _ravi["Блок_" + j] = l[k];
+                  k++;
+                    jjj = j;
+               }
+                k = 0;
+                for (int j = jjj+1; j < myStr_1.Count + 1+jjj; j++)
+                {
+                    _ravi["Блок_" + j] = l_1[k];
+                    k++;
+                }
+                dt.Rows.Add(_ravi);
+            }
+            catch (Exception p)
             {
                 MessageBox.Show(p.Message);
             }
-            
+
             dataGrid.DataSource = dt;
             dataGrid.Visible = true;
 
@@ -246,13 +338,13 @@ namespace project_vniia
             }
             return path;
         }
-
+        
         private void button1_Click(object sender, EventArgs e)
         {
             Sobr_system();
         }
 
-        public void Prov_way(string _ways)
+        public void Prov_way(string _ways, DataRow row)
         {
             if (!Directory.Exists(System_ways))
                 Directory.CreateDirectory(System_ways);
@@ -260,20 +352,13 @@ namespace project_vniia
             {
                 File.Create(_ways).Close();
             }
-
             
-            DataTable data = (DataTable)dataGrid.DataSource;
-            var rows = data.Rows;
             try
             {
                 using (StreamWriter sr = new StreamWriter(_ways))
                 {
-                    foreach (DataRow row in rows)
-                    {
-                        sr.WriteLine(String.Join(",", row.ItemArray));
-                    }
+                  sr.WriteLine(String.Join(",", row.ItemArray));   
                 }
-
             }
             catch (Exception k)
             {
@@ -281,7 +366,6 @@ namespace project_vniia
                 MessageBox.Show("The file could not be read:");
                 Console.WriteLine(k.Message);
             }
-
         }
 
         public void Zap(string way, string F, bool flag_sysh)
@@ -300,8 +384,71 @@ namespace project_vniia
 
         private void button2_Click(object sender, EventArgs e)
         {
-            string way_ = System_ways + "\\" + dataGrid.Rows[0].Cells[2].Value.ToString() + ".txt";
-            Prov_way(way_);
+            string way_ = "";
+            DataTable data = (DataTable)dataGrid.DataSource;
+            var rows = data.Rows;
+            foreach (DataRow row in rows)
+            {
+                if (row[0].ToString() == "")
+                {
+                    way_ = System_ways + "\\" + row[3].ToString() + ".txt";
+                }
+                else
+                {
+                    way_ = System_ways + "\\" + row[0].ToString() + ".txt";
+                }
+                Prov_way(way_, row);
+            }
+            List<DataRow> kkk = new List<DataRow>();
+            try
+            {
+                var rows_ = myDBs["[Блоки]"].table.Rows;
+                
+                foreach (DataRow row_ in rows)
+                {
+                    for (int i = 3; i < row_.ItemArray.Length; i++)
+                    {
+                        foreach (DataRow r in rows_)
+                        {
+                            if (r.ItemArray[0].ToString() == row_.ItemArray[i].ToString())
+                            {
+                                var ttt = r[t2].ToString();
+                                if (ttt.Contains("_сохранено в файле"))
+                                {
+                                    MessageBox.Show("Блок уже сохранён в другой системе!");
+                                    return;
+                                }
+                                else
+                                    ttt = ttt + "_сохранено в файле";
+                                r[t2] = ttt;
+                            }
+                        }
+                        //nameds = row_[2].ToString();
+                        string[] nameds = row_[2].ToString().Split('/');
+                        foreach (var name_ in nameds)
+                        {
+                            foreach (DataRow r in ds.Tables[name_].Rows)
+                            {
+                                if (r.ItemArray[0].ToString() == row_.ItemArray[i].ToString())
+                                {
+                                    kkk.Add(r);
+                                }
+                            }
+                            
+                        }
+                    }
+
+                }
+                foreach (var r in kkk)
+                {
+                    ds.Tables[r[1].ToString()].Rows.Remove(r);
+                }
+                kkk.Clear();
+            }
+            catch (Exception p)
+            { MessageBox.Show("Возможно вы не нажали на кнопку 'Собрать' или не открыли файл перед добавлением в таблицу."); }
+            dt.Clear();
+
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -320,9 +467,10 @@ namespace project_vniia
                     DataTable dt = new DataTable();
                     dt.Columns.Add("Номер системы");
                     dt.Columns.Add("Тип системы");
+                    dt.Columns.Add("Тип БД");
                     string s = sr.ReadLine();
                     string[] parts = s.Split(',');
-                    for (int i = 1; i < parts.Length - 1; i++)
+                    for (int i = 1; i < parts.Length - 2; i++)
                     {
                         dt.Columns.Add("Блок_" + i);
                     }
@@ -419,12 +567,89 @@ namespace project_vniia
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
+            try
+            {
+                string comb = comboBox1.Text;
+                if (!dataGridViewLeft.Columns.Contains("Выбрать"))
+                {
+                    DataGridViewCheckBoxColumn dataColumn = new DataGridViewCheckBoxColumn();
+                    dataColumn.Name = "Выбрать";
+                    dataColumn.DefaultCellStyle = null;
+                    dataGridViewLeft.Columns.Add(dataColumn);
+                }
+                dataGridViewLeft.DataSource = ds.Tables[comb].DefaultView;
+
+            }
+            catch (Exception p)
+            { MessageBox.Show(p.ToString()); }
 
         }
 
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
+            try
+            {
+                string comb = comboBox2.Text;
+                if (!dataGridViewRight.Columns.Contains("Выбрать"))
+                {
+                    DataGridViewCheckBoxColumn dataColumn = new DataGridViewCheckBoxColumn();
+                    dataColumn.Name = "Выбрать";
+                    dataColumn.DefaultCellStyle = null;
+                    dataGridViewRight.Columns.Add(dataColumn);
+                }
+                dataGridViewRight.DataSource = ds.Tables[comb].DefaultView;
 
+            }
+            catch (Exception p)
+            { MessageBox.Show(p.ToString()); }
+
+        }
+
+        private void dataGridViewLeft_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBox1.Checked == true)
+            {
+                for (int i = 0; i < Controls.Count; i++)
+                {
+                    if (Controls[i].Name == "dataGridViewLeft" || Controls[i].Name == "dataGridViewRight" || Controls[i].Name == "datagr")
+                    {
+                        Control c = Controls[i];
+                        pb.WireControl1(c);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < Controls.Count; i++)
+                {
+                    if (Controls[i].Name == "dataGridViewLeft" || Controls[i].Name == "dataGridViewRight" || Controls[i].Name == "datagr")
+                    {
+                        Control c = Controls[i];
+                        pb.WireControl(c);
+                    }
+                }
+            }
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            string filename;
+            openFileDialog1.InitialDirectory = System_ways;
+            if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                filename = openFileDialog1.SafeFileName;
+                if(filename.Contains(".txt"))
+                {
+                    filename = filename.Substring(0,filename.IndexOf('.'));
+                }
+                textBox1.Text = filename;
+                button3.PerformClick();
+            }
         }
     }
 }
